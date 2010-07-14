@@ -50,6 +50,24 @@ config = {
 			file = "modules/coffee.lua",
 			parameters = {"data/coffee.example.json"}
 		},
+		storage = {
+			file = "modules/storage.lua",
+			parameters = {"data/storage.example.json"}
+		},
+    headings = {
+      file = "modules/headings.lua",
+      parameters = {}
+    },
+    timer = {
+      file = "modules/timer.lua",
+      parameters = {}
+    },
+    twitter = {
+      file ="modules/twitter.lua",
+      -- the second parameter is the interval between twitter checks in minutes.
+      -- keep in mind that twitter allows only 150 requests per hour, and one request is made per user per interval
+      parameters = {"data/twitter.example.json", 5}
+    }
 	},
 	
 	-- These should be self-explanatory for everybody who even remotely knows the IRC.
