@@ -18,13 +18,40 @@
 
 config = {
 	modules = {
+		botmode = { -- Considered good manners on most networks
+			file = "modules/botmode.lua",
+			parameters = {}
+		},
 		ping = { -- Detects disconnects
 			file = "modules/ping.lua",
 			parameters = {60}
 		},
 		reconnect = { -- Self-explanatory
 			file = "modules/reconnect.lua",
-			parameters = {true}
+			parameters = {}
+		},
+		altnick = { -- Allows for alternate nicknames when the original one is taken.
+			file = "modules/altnick.lua",
+			parameters = {"Aurora_"}
+		},
+		nickserv = { -- This one is awesome - or at least what it does is…
+			file = "modules/nickserv.lua",
+			parameters = {{
+				xinutec = {
+					nickname = "Aurora",
+					password = "nope",
+					email = "aurora@gempai.de",
+					ghost = true,
+					remote = "NickServ@services.xinutec.org",
+				},
+				freenode = {
+					nickname = "Aurora",
+					password = "nope",
+					email = "aurora@gempai.de",
+					ghost = true,
+					remote = "NickServ@services.freenode.org",
+				}
+			}}
 		},
 		auth = { -- Aurora uses nested modules for features like authenticated modules
 			file = "modules/auth.lua",
