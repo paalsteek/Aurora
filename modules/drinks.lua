@@ -24,55 +24,81 @@ local pcre = require("rex_pcre")
 local db
 local env
 
-local drink_incr = function(network, sender, channel, message)
-	incr = pcre.match(message, "([^ \\+,]+)\\+\\+")
-	if incr then
-		log:debug('[drinks] Incrementing ' .. incr)
+local increment = function(user, drink)
+	log:debug('[drinks] Incrementing ' .. drink)
+	result = db:execute(
+			string.format([[
+				SELECT id FROM drinks WHERE name LIKE '%s'
+				]], drink)
+			)
+	dbdrink = result:fetch({}, "a")
+	if dbdrink then
 		result = db:execute(
 				string.format([[
-					SELECT id FROM drinks WHERE name LIKE '%s'
-					]], incr)
+					SELECT id FROM user WHERE name LIKE '%s'
+					]], user)
 				)
-		drink = result:fetch({}, "a")
-		if drink then
+		dbuser = result:fetch({}, "a")
+		if not dbuser then
+			db:execute(
+					string.format([[
+						INSERT INTO user (name) VALUES ('%s')
+						]], user)
+				  )
 			result = db:execute(
 					string.format([[
 						SELECT id FROM user WHERE name LIKE '%s'
-						]], sender.nick)
+						]], user)
 					)
-			user = result:fetch({}, "a")
-			if not user then
-				db:execute(
-						string.format([[
-							INSERT INTO user (name) VALUES ('%s')
-							]], sender.nick)
-					  )
-				result = db:execute(
-						string.format([[
-							SELECT id FROM user WHERE name LIKE '%s'
-							]], sender.nick)
-						)
-				user = result:fetch({}, "a")
-			end
+			dbuser = result:fetch({}, "a")
+		end
+		result = db:execute(
+				string.format([[
+					INSERT INTO stat (time, drink, user) VALUES (datetime('now'), %d, %d)
+					]], dbdrink.id, dbuser.id)
+				)
+		--log:debug("[drinks] Result: " .. result)
+		if result == 1 then
 			result = db:execute(
 					string.format([[
-						INSERT INTO stat (time, drink, user) VALUES (datetime('now'), %d, %d)
-						]], drink.id, user.id)
+						SELECT COUNT(*) FROM stat JOIN user ON stat.user = user.id WHERE user.name LIKE '%s'
+						]], user)
 					)
-			--log:debug("[drinks] Result: " .. result)
-			if result == 1 then
-				result = db:execute(
-						string.format([[
-							SELECT COUNT(*) FROM stat JOIN user ON stat.user = user.id WHERE user.name LIKE '%s'
-							]], sender.nick)
-						)
-				num = result:fetch({})[1]
-				network.send("privmsg", channel, sender.nick .. "hatte schon " .. num .. " " .. incr)
-			else
-				log:debug('[drinks] Incrementing failed')
-			end
+			num = result:fetch({})[1]
+			return user .. "hatte schon " .. num .. " " .. drink
 		else
-			log:debug('[drinks] Drink ' .. incr .. ' does not exist.')
+			log:debug('[drinks] Incrementing failed')
+			return "An Error accoured."
+		end
+	else
+		log:debug('[drinks] Drink ' .. drink .. ' does not exist.')
+		return "Drink " .. drink .. " does not exist."
+	end
+end
+
+local drinks_handler = function(network, sender, channel, message)
+	matches = pcre.gmatch(message, "([^ \\+,]+)\\+\\+|([^ \\+]+) ?\\+= ?(\\d+)|!drinks\.(list)\\(?\\)?")
+	if type(matches) == "function" then
+		incr, nincr, n, list = matches()
+		while type(incr) ~= "nil" do
+			if incr ~= false then
+				network.send("privmsg", channel, increment(sender.nick, incr))
+			elseif nincr ~= false and n ~= false then
+				for i = 1, n-1, 1 do
+					increment(sender.nick, nincr)
+				end
+				network.send("privmsg", channel, increment(sender.nick, nincr))
+			elseif list ~= false then
+				result = db:execute([[SELECT name FROM drinks]])
+				drinks = {}
+				row = result:fetch({}, "a")
+				while row do
+					table.insert(drinks, row.name)
+					row = result:fetch(row, "a")
+				end
+				network.send("privmsg", channel, "I know the following drinks: " .. table.concat(drinks, ", "))
+			end
+			incr, nincr, n, list = matches()
 		end
 	end
 end
@@ -140,7 +166,7 @@ local interface = {
 					end
 				end
 			else
-				drink_incr(network, sender, channel, message)
+				drinks_handler(network, sender, channel, message)
 			end
 		end,
 
@@ -163,7 +189,7 @@ local interface = {
 
 	handlers = {
 		privmsg = function(network, sender, channel, message)
-			drink_incr(network, sender, channel, message)
+			drinks_handler(network, sender, channel, message)
 		end,
 	},
 }
