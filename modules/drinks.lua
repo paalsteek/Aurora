@@ -76,10 +76,55 @@ local increment = function(user, drink)
 	end
 end
 
+local drinks_stat = function(user)
+	log:debug("[drinks] Generating stats for " .. user)
+	result = db:execute(
+			string.format([[
+				SELECT id FROM user WHERE name LIKE '%s'
+				]], user)
+			)
+	dbuser = result:fetch({}, "a")
+	if not dbuser then
+		db:execute(
+				string.format([[
+					INSERT INTO user (name) VALUES ('%s')
+					]], user)
+			  )
+		result = db:execute(
+				string.format([[
+					SELECT id FROM user WHERE name LIKE '%s'
+					]], user)
+				)
+		dbuser = result:fetch({}, "a")
+	end
+	log:debug("[drinks] " .. user .. " has the id " .. dbuser.id)
+	result = db:execute([[SELECT id,name FROM drinks WHERE equals ISNULL]])
+	drinks = {}
+	row = result:fetch({}, "a")
+	while row do
+		table.insert(drinks, row)
+		row = result:fetch({}, "a")
+	end
+	stat = {}
+	for _, drink in pairs(drinks) do
+		result = db:execute(
+				string.format([[
+						SELECT COUNT(*) FROM stat WHERE user = %d AND drink = %d
+					]], dbuser.id, drink.id)
+				)
+		row = result:fetch()
+		while row do
+			table.insert(stat, drink.name .. ": " .. row)
+			row = result:fetch({})
+		end
+	end
+	return table.concat(stat, ", ")
+end
+
 local drinks_handler = function(network, sender, channel, message)
-	matches = pcre.gmatch(message, "([^ \\+,]+)\\+\\+|([^ \\+]+) ?\\+= ?(\\d+)|!drinks\.(list)\\(?\\)?")
+	matches = pcre.gmatch(message, "([^ \\+,]+)\\+\\+|([^ \\+]+) ?\\+= ?(\\d+)|!drinks\.(list|stat)(\\([^ ]*\\))?")
 	if type(matches) == "function" then
-		incr, nincr, n, list = matches()
+		incr, nincr, n, func, arg = matches()
 		while type(incr) ~= "nil" do
 			if incr ~= false then
 				network.send("privmsg", channel, increment(sender.nick, incr))
@@ -88,7 +133,7 @@ local drinks_handler = function(network, sender, channel, message)
 					increment(sender.nick, nincr)
 				end
 				network.send("privmsg", channel, increment(sender.nick, nincr))
-			elseif list ~= false then
+			elseif func == "list" then
 				result = db:execute([[SELECT name, amount FROM drinks]])
 				drinks = {}
 				row = result:fetch({}, "a")
@@ -97,8 +142,14 @@ local drinks_handler = function(network, sender, channel, message)
 					row = result:fetch(row, "a")
 				end
 				network.send("privmsg", channel, "I know the following drinks: " .. table.concat(drinks, ", "))
+			elseif func == "stat" then
+				if arg ~= false then
+					network.send("privmsg", channel, drinks_stat(string.sub(arg, 2, string.len(arg)-1)))
+				else
+					network.send("privmsg", channel, drinks_stat(sender.nick))
+				end
 			end
-			incr, nincr, n, list = matches()
+			incr, nincr, n, func, arg = matches()
 		end
 	end
 end
@@ -106,15 +157,15 @@ end
 
 local interface = {
 	construct = function(database)
-		log:info("Loading module 'drinks'")
 		env = assert(luasql.sqlite3())
 		db = assert(env:connect(database))
 		if not db
 		then
-			log:info("[drinks] Failed to load database")
+			log:warning("[drinks] Failed to load database")
 			return false
 		else
-			log:info("[drinks] Loading database successful.")
+			db:setautocommit(true)
+			log:debug("[drinks] Loading database successful.")
 			return true
 		end
 	end,
