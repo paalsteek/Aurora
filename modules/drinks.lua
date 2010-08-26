@@ -132,7 +132,7 @@ local interface = {
 	authorized_handlers = {
 		-- One typical IRC message handler:
 		privmsg = function(network, sender, channel, message)
-			drink, alc, caff, amount = pcre.match(message, "^!drinks\.new\\(([^ \\+,]+), (\\d+), (\\d+), (\\d+\.?\\d{1,2}\\)")
+			drink, alc, caff, amount = pcre.match(message, "^!drinks\.new\\(([^ \\+,]+), ?(\\d+), ?(\\d+), ?(\\d+\.?\\d{1,2}\\)")
 			if drink then
 				exists = db:execute(
 					string.format([[
