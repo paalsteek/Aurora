@@ -65,10 +65,10 @@ local increment = function(user, drink)
 						]], user)
 					)
 			num = result:fetch({})[1]
-			return user .. "hatte schon " .. num .. " " .. drink
+			return user .. " hatte schon " .. num .. " " .. drink
 		else
 			log:debug('[drinks] Incrementing failed')
-			return "An Error accoured."
+			return "An Error occoured."
 		end
 	else
 		log:debug('[drinks] Drink ' .. drink .. ' does not exist.')
