@@ -114,8 +114,10 @@ local drinks_stat = function(user)
 				)
 		row = result:fetch()
 		while row do
-			table.insert(stat, drink.name .. ": " .. row)
-			row = result:fetch({})
+			if row ~= '0' then
+				table.insert(stat, drink.name .. ": " .. row)
+				row = result:fetch({})
+			end
 		end
 	end
 	return table.concat(stat, ", ")
@@ -183,7 +185,7 @@ local interface = {
 	authorized_handlers = {
 		-- One typical IRC message handler:
 		privmsg = function(network, sender, channel, message)
-			drink, alc, caff, amount = pcre.match(message, "^!drinks\.new\\(([^ \\+,]+), ?(\\d+), ?(\\d+), ?(\\d+\.?\\d{1,2}\\)")
+			drink, alc, caff, amount = pcre.match(message, "^!drinks\.new\\(([^ \\+,]+), ?(\\d+), ?(\\d+), ?(\\d+\.?\\d{1,2})\\)")
 			if drink then
 				exists = db:execute(
 					string.format([[
