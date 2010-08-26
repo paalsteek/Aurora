@@ -32,6 +32,7 @@ local increment = function(user, drink)
 				]], drink)
 			)
 	dbdrink = result:fetch({}, "a")
+	result:close()
 	if dbdrink then
 		result = db:execute(
 				string.format([[
@@ -39,6 +40,7 @@ local increment = function(user, drink)
 					]], user)
 				)
 		dbuser = result:fetch({}, "a")
+		result:close()
 		if not dbuser then
 			db:execute(
 					string.format([[
@@ -51,6 +53,7 @@ local increment = function(user, drink)
 						]], user)
 					)
 			dbuser = result:fetch({}, "a")
+			result:close()
 		end
 		result = db:execute(
 				string.format([[
@@ -65,6 +68,7 @@ local increment = function(user, drink)
 						]], dbuser.id, dbdrink.id)
 					)
 			num = result:fetch({})[1]
+			result:close()
 			return user .. " hatte schon " .. num .. " " .. drink
 		else
 			log:debug('[drinks] Incrementing failed')
@@ -84,6 +88,7 @@ local drinks_stat = function(user)
 				]], user)
 			)
 	dbuser = result:fetch({}, "a")
+	result:close()
 	if not dbuser then
 		db:execute(
 				string.format([[
@@ -96,6 +101,7 @@ local drinks_stat = function(user)
 					]], user)
 				)
 		dbuser = result:fetch({}, "a")
+		result:close()
 	end
 	log:debug("[drinks] " .. user .. " has the id " .. dbuser.id)
 	result = db:execute([[SELECT id,name FROM drinks WHERE equals ISNULL]])
@@ -105,6 +111,7 @@ local drinks_stat = function(user)
 		table.insert(drinks, row)
 		row = result:fetch({}, "a")
 	end
+	result:close()
 	stat = {}
 	for _, drink in pairs(drinks) do
 		result = db:execute(
@@ -119,6 +126,7 @@ local drinks_stat = function(user)
 			end
 			row = result:fetch({})
 		end
+		result:close()
 	end
 	return table.concat(stat, ", ")
 end
@@ -143,6 +151,7 @@ local drinks_handler = function(network, sender, channel, message)
 					table.insert(drinks, row.name .. ' [' .. row.amount .. 'l]')
 					row = result:fetch(row, "a")
 				end
+				result:close()
 				network.send("privmsg", channel, "I know the following drinks: " .. table.concat(drinks, ", "))
 			elseif func == "stat" then
 				if arg ~= false then
@@ -193,6 +202,7 @@ local interface = {
 						]], '%' .. drink .. '%')
 					)
 				exdrink = exists:fetch({}, "a")
+				result:close()
 				--exdrinks = ""
 				--while exdrink do
 					--log:debug('[drinks] Exists: ' .. exdrink.name)
