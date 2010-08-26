@@ -61,8 +61,8 @@ local increment = function(user, drink)
 		if result == 1 then
 			result = db:execute(
 					string.format([[
-						SELECT COUNT(*) FROM stat JOIN user ON stat.user = user.id WHERE user.name LIKE '%s'
-						]], user)
+						SELECT COUNT(*) FROM stat WHERE user = %d AND drink = %d
+						]], dbuser.id, dbdrink.id)
 					)
 			num = result:fetch({})[1]
 			return user .. " hatte schon " .. num .. " " .. drink
@@ -116,8 +116,8 @@ local drinks_stat = function(user)
 		while row do
 			if row ~= '0' then
 				table.insert(stat, drink.name .. ": " .. row)
-				row = result:fetch({})
 			end
+			row = result:fetch({})
 		end
 	end
 	return table.concat(stat, ", ")
