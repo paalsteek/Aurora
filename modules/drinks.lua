@@ -89,11 +89,11 @@ local drinks_handler = function(network, sender, channel, message)
 				end
 				network.send("privmsg", channel, increment(sender.nick, nincr))
 			elseif list ~= false then
-				result = db:execute([[SELECT name FROM drinks]])
+				result = db:execute([[SELECT name, amount FROM drinks]])
 				drinks = {}
 				row = result:fetch({}, "a")
 				while row do
-					table.insert(drinks, row.name)
+					table.insert(drinks, row.name .. ' [' .. row.amount .. 'l]')
 					row = result:fetch(row, "a")
 				end
 				network.send("privmsg", channel, "I know the following drinks: " .. table.concat(drinks, ", "))
