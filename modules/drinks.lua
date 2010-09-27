@@ -139,10 +139,14 @@ local drinks_handler = function(network, sender, channel, message)
 			if incr ~= false then
 				network.send("privmsg", channel, increment(sender.nick, incr))
 			elseif nincr ~= false and n ~= false then
-				for i = 1, n-1, 1 do
-					increment(sender.nick, nincr)
+				if n ~= 0 then
+					for i = 1, n-1, 1 do
+						increment(sender.nick, nincr)
+					end
+					network.send("privmsg", channel, increment(sender.nick, nincr))
+				else
+					network.send("privmsg", channel, "Jaja...")
 				end
-				network.send("privmsg", channel, increment(sender.nick, nincr))
 			elseif func == "list" then
 				result = db:execute([[SELECT name, amount FROM drinks]])
 				drinks = {}
