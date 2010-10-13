@@ -132,14 +132,14 @@ local drinks_stat = function(user)
 end
 
 local drinks_handler = function(network, sender, channel, message)
-	matches = pcre.gmatch(message, "([^ \\+,]+)\\+\\+|([^ \\+]+) ?\\+= ?(\\d+)|!drinks\.(list|stat)(\\([^ ]*\\))?")
+	matches = pcre.gmatch(message, "([^ \\+,]+)\\+\\+|([^ \\+]+) ?\\+= ?(\\d+)|!drinks\.(list|stat|help)(\\([^ ]*\\))?")
 	if type(matches) == "function" then
 		incr, nincr, n, func, arg = matches()
 		while type(incr) ~= "nil" do
 			if incr ~= false then
 				network.send("privmsg", channel, increment(sender.nick, incr))
 			elseif nincr ~= false and n ~= false then
-				if n ~= 0 then
+				if n ~= "0" then
 					for i = 1, n-1, 1 do
 						increment(sender.nick, nincr)
 					end
@@ -163,6 +163,8 @@ local drinks_handler = function(network, sender, channel, message)
 				else
 					network.send("privmsg", channel, drinks_stat(sender.nick))
 				end
+			elseif func == "help" then
+				network.send("privmsg", channel, "Functions: list (list of all known drinks), stat(user) (stats of user (own stats if user is empty)), help (gives you this message), new(name, alc, caff, amount) (only for authorized user)")
 			end
 			incr, nincr, n, func, arg = matches()
 		end
@@ -227,7 +229,7 @@ local interface = {
 						)
 					if res == 1 then
 						network.send("privmsg", channel, "New drink " .. drink .. " added to database.")
-						log:info("[drinks] Added " .. drink .. " to database.")
+						log:info("[drinks] Added " .. drink .. "(" alc .. ", " .. caff .. ", " .. amount ")" .. " to database.")
 					else
 						log:info(res)
 					end
